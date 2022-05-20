@@ -1,13 +1,18 @@
-import { useState } from 'react'
+import Form from "./components/Form";
+import Header from "./components/Header";
+import PatientList from "./components/PatientList";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <div className="App">
-      <h1>Hello World</h1>
+    <div className="container mx-auto mt-20">
+      <Header />
+      <div className="mt-12 md:flex">
+      <Form />
+      <PatientList />
+      </div>
+      
     </div>
-  )
+  );
 }
 
 export default App
