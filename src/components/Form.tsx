@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, FC, Dispatch, SetStateAction } from "react";
 import { IPatientInfo } from "../types/PatientInfo.interface";
 import "../styles/styles.css";
 
-function Form() {
-  const [patient, setPatient] = useState<Partial<IPatientInfo>>({
+export interface IFormProps {
+  setPatients: Dispatch<SetStateAction<IPatientInfo[] | undefined>>;
+}
+
+const Form: FC<IFormProps> = ({ setPatients }) => {
+  const [patient, setPatient] = useState<IPatientInfo>({
     petName: "",
     ownerName: "",
     email: "",
@@ -12,7 +16,7 @@ function Form() {
   });
   const [error, setError] = useState(false);
 
-  const handleSubmit = (evt: { preventDefault: () => void; }) => {
+  const handleSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
 
     if (
@@ -25,15 +29,17 @@ function Form() {
       ].includes("")
     ) {
       setError(true);
-    } else {
-      setError(false);
+      return;
     }
-
-    console.log(patient);
+    setError(false);
+    setPatients((prev) => (prev ? [...prev, patient] : [patient]));
   };
 
-  const handleChange = (value: {}) => {
-    setPatient({ ...patient, ...value });
+  const handleChange = (e: React.ChangeEvent<any>) => {
+    const key: keyof IPatientInfo = e.target.id;
+    const value: string = e.target.value;
+    const updatedField = { [key]: value };
+    setPatient({ ...patient, ...updatedField });
   };
 
   return (
@@ -57,9 +63,7 @@ function Form() {
             type="text"
             placeholder="Pet name"
             className="border-2 w-full p-2 mt-2 placeholder-gray-400 rounded-md"
-            onChange={(e) => {
-              handleChange({ petName: e.target.value });
-            }}
+            onChange={handleChange}
           />
         </div>
 
@@ -75,9 +79,7 @@ function Form() {
             type="text"
             placeholder="Owner name"
             className="border-2 w-full p-2 mt-2 placeholder-gray-400 rounded-md"
-            onChange={(e) => {
-              handleChange({ ownerName: e.target.value });
-            }}
+            onChange={handleChange}
           />
         </div>
 
@@ -93,9 +95,7 @@ function Form() {
             type="email"
             placeholder="Contact email"
             className="border-2 w-full p-2 mt-2 placeholder-gray-400 rounded-md"
-            onChange={(e) => {
-              handleChange({ email: e.target.value });
-            }}
+            onChange={handleChange}
           />
         </div>
 
@@ -110,9 +110,7 @@ function Form() {
             id="dischargeDate"
             type="date"
             className="border-2 w-full p-2 mt-2 placeholder-gray-400 rounded-md"
-            onChange={(e) => {
-              handleChange({ dischargeDate: e.target.value });
-            }}
+            onChange={handleChange}
           />
         </div>
 
@@ -126,15 +124,13 @@ function Form() {
           <textarea
             id="symptoms"
             className="border-2 w-full p-2 mt-2 placeholder-gray-400 rounded-md"
-            onChange={(e) => {
-              handleChange({ symptoms: e.target.value });
-            }}
+            onChange={handleChange}
           />
         </div>
-        {error ? (
-          <div className="mb-5 font-bold color-red">All fields are required</div>
-        ) : (
-          ""
+        {error && (
+          <div className="mb-5 bg-red-600 text-center font-bold text-white py-3 rounded-lg">
+            All fields are required
+          </div>
         )}
         <input
           type="submit"
@@ -144,6 +140,6 @@ function Form() {
       </form>
     </div>
   );
-}
+};
 
 export default Form;
