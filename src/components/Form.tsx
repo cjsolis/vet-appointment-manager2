@@ -1,38 +1,60 @@
-import { useState, FC, Dispatch, SetStateAction } from "react";
+import { useState, FC, createRef, useEffect } from "react";
 import { IPatientInfo } from "../types/PatientInfo.interface";
 import "../styles/styles.css";
+import {
+  formContainsEmptyValues,
+  getDefaultPatientInfo,
+} from "../utils/helper";
+import Error from "./Error";
+import { ISharedProps } from "../types/SharedProps.interface";
 
-export interface IFormProps {
-  setPatients: Dispatch<SetStateAction<IPatientInfo[] | undefined>>;
-}
-
-const Form: FC<IFormProps> = ({ setPatients }) => {
-  const [patient, setPatient] = useState<IPatientInfo>({
-    petName: "",
-    ownerName: "",
-    email: "",
-    dischargeDate: "",
-    symptoms: "",
-  });
+const Form: FC<ISharedProps> = ({
+  setPatients,
+  setPatient: resetPatientToUpdate,
+  patient: patientToUpdate,
+}) => {
+  const [patient, setPatient] = useState<IPatientInfo>(getDefaultPatientInfo);
   const [error, setError] = useState(false);
+  const [edit, setEdit] = useState(false);
+
+  const formRef = createRef<HTMLFormElement>();
+
+  useEffect(() => {
+    if (Object.values(patientToUpdate).toString() !== ",,,,,") {
+      setEdit(true);
+      setPatient(patientToUpdate);
+    }
+  }, [patientToUpdate]);
 
   const handleSubmit = (evt: React.FormEvent<HTMLFormElement>) => {
     evt.preventDefault();
 
-    if (
-      [
-        patient?.petName,
-        patient?.ownerName,
-        patient?.email,
-        patient?.dischargeDate,
-        patient?.symptoms,
-      ].includes("")
-    ) {
+    if (formContainsEmptyValues(patient)) {
       setError(true);
       return;
     }
+
     setError(false);
-    setPatients((prev) => (prev ? [...prev, patient] : [patient]));
+
+    if (patient.id) {
+      setPatients((prev) => {
+        if (prev) {
+          const filtered = prev.filter(
+            (previous) => previous.id !== patient.id
+          );
+          return [...filtered, patient];
+        } else {
+          return [patient];
+        }
+      });
+      resetPatientToUpdate(getDefaultPatientInfo);
+    } else {
+      setEdit(false);
+      patient.id = generateRandomId();
+      setPatients((prev) => (prev ? [...prev, patient] : [patient]));
+    }
+
+    handleClearForm();
   };
 
   const handleChange = (e: React.ChangeEvent<any>) => {
@@ -40,6 +62,16 @@ const Form: FC<IFormProps> = ({ setPatients }) => {
     const value: string = e.target.value;
     const updatedField = { [key]: value };
     setPatient({ ...patient, ...updatedField });
+  };
+
+  const handleClearForm = () => {
+    setPatient(getDefaultPatientInfo);
+    setEdit(false);
+    formRef.current?.reset();
+  };
+
+  const generateRandomId = () => {
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
   };
 
   return (
@@ -50,6 +82,7 @@ const Form: FC<IFormProps> = ({ setPatients }) => {
       <form
         className="bg-white shadow-md rounded-lg py-10 px-5 mb-10"
         onSubmit={handleSubmit}
+        ref={formRef}
       >
         <div className="mb-5">
           <label
@@ -64,6 +97,7 @@ const Form: FC<IFormProps> = ({ setPatients }) => {
             placeholder="Pet name"
             className="border-2 w-full p-2 mt-2 placeholder-gray-400 rounded-md"
             onChange={handleChange}
+            defaultValue={patient.petName || ""}
           />
         </div>
 
@@ -80,6 +114,7 @@ const Form: FC<IFormProps> = ({ setPatients }) => {
             placeholder="Owner name"
             className="border-2 w-full p-2 mt-2 placeholder-gray-400 rounded-md"
             onChange={handleChange}
+            defaultValue={patient.ownerName || ""}
           />
         </div>
 
@@ -96,6 +131,7 @@ const Form: FC<IFormProps> = ({ setPatients }) => {
             placeholder="Contact email"
             className="border-2 w-full p-2 mt-2 placeholder-gray-400 rounded-md"
             onChange={handleChange}
+            defaultValue={patient.email || ""}
           />
         </div>
 
@@ -111,6 +147,7 @@ const Form: FC<IFormProps> = ({ setPatients }) => {
             type="date"
             className="border-2 w-full p-2 mt-2 placeholder-gray-400 rounded-md"
             onChange={handleChange}
+            defaultValue={patient.dischargeDate || ""}
           />
         </div>
 
@@ -125,18 +162,23 @@ const Form: FC<IFormProps> = ({ setPatients }) => {
             id="symptoms"
             className="border-2 w-full p-2 mt-2 placeholder-gray-400 rounded-md"
             onChange={handleChange}
+            defaultValue={patient.symptoms || ""}
           />
         </div>
-        {error && (
-          <div className="mb-5 bg-red-600 text-center font-bold text-white py-3 rounded-lg">
-            All fields are required
-          </div>
-        )}
-        <input
-          type="submit"
-          className="bg-indigo-600 w-full p-3 text-white uppercase font-bold hover:bg-indigo-700 cursor-pointer transition-colors"
-          value="Add Patient"
-        />
+        {error && <Error message="All fields are required" />}
+        <div className="w-full flex justify-between">
+          <input
+            type="button"
+            className="p-3 uppercase font-bold cursor-pointer"
+            onClick={handleClearForm}
+            value="Clear"
+          />
+          <input
+            type="submit"
+            className="bg-indigo-600 p-3 text-white uppercase font-bold hover:bg-indigo-700 cursor-pointer transition-colors rounded-lg"
+            value={edit ? "Edit Patient" : "Add Patient"}
+          />
+        </div>
       </form>
     </div>
   );
